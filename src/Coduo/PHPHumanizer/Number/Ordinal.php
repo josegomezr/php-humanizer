@@ -2,7 +2,10 @@
 
 namespace Coduo\PHPHumanizer\Number;
 
-class Ordinal
+use Coduo\PHPHumanizer\Number\Ordinal\Builder;
+use Coduo\PHPHumanizer\Number\Ordinal\StrategyInterface;
+
+final class Ordinal
 {
     /**
      * @var int|float
@@ -10,26 +13,29 @@ class Ordinal
     private $number;
 
     /**
-     * @param int|float $number
+     * @var StrategyInterface
      */
-    public function __construct($number)
+    private $strategy;
+
+    /**
+     * @param int|float $number
+     * @param string    $locale
+     */
+    public function __construct($number, $locale)
     {
         $this->number = $number;
+        $this->strategy = Builder::build($locale);
+    }
+
+    public function isPrefix()
+    {
+        return $this->strategy->isPrefix();
     }
 
     public function __toString()
     {
-        $absNumber = abs((integer) $this->number);
-
-        if (in_array(($absNumber % 100), array(11, 12, 13))) {
-            return 'th';
-        }
-
-        switch ($absNumber % 10) {
-            case 1:  return 'st';
-            case 2:  return 'nd';
-            case 3:  return 'rd';
-            default: return 'th';
-        }
+        return $this
+            ->strategy
+            ->ordinalIndicator($this->number);
     }
 }

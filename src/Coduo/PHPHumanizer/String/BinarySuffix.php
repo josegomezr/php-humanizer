@@ -2,7 +2,7 @@
 
 namespace Coduo\PHPHumanizer\String;
 
-class BinarySuffix
+final class BinarySuffix
 {
     const CONVERT_THRESHOLD = 1024;
 
@@ -29,15 +29,20 @@ class BinarySuffix
     );
 
     /**
-     * @param $number
+     * @param int    $number
      * @param string $locale
+     * @param int    $precision
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct($number, $locale = 'en')
+    public function __construct($number, $locale = 'en', $precision = null)
     {
         if (!is_numeric($number)) {
             throw new \InvalidArgumentException('Binary suffix converter accept only numeric values.');
+        }
+
+        if (!is_null($precision)) {
+            $this->setSpecificPrecisionFormat($precision);
         }
 
         $this->number = (int) $number;
@@ -61,5 +66,36 @@ class BinarySuffix
         }
 
         return $formatter->format($this->number);
+    }
+
+    /**
+     * Replaces the default ICU 56.1 decimal formats defined in $binaryPrefixes with ones that provide the same symbols
+     * but the provided number of decimal places.
+     *
+     * @param int $precision
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function setSpecificPrecisionFormat($precision)
+    {
+        if ($precision < 0) {
+            throw new \InvalidArgumentException('Precision must be positive');
+        }
+        if ($precision > 3) {
+            throw new \InvalidArgumentException('Invalid precision. Binary suffix converter can only represent values in '.
+                'up to three decimal places');
+        }
+
+        $icuFormat = '#';
+        if ($precision > 0) {
+            $icuFormat .= str_pad('#.', (2 + $precision), '0');
+        }
+
+        foreach ($this->binaryPrefixes as $size => $unitPattern) {
+            if ($size >= 1024) {
+                $symbol = substr($unitPattern, strpos($unitPattern, ' '));
+                $this->binaryPrefixes[$size] = $icuFormat.$symbol;
+            }
+        }
     }
 }
